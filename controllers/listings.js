@@ -51,41 +51,70 @@ module.exports.showListing = async (req, res) => {
 //     }
 
 
-module.exports.createListing = async (req, res, next) => {
-    try {
-        let url = req.file.path;
-        let filename = req.file.filename;
+// module.exports.createListing = async (req, res, next) => {
+//     try {
+//         let url = req.file.path;
+//         let filename = req.file.filename;
         
-        // ADD GEOCODING LOGIC HERE
-        const geocodedData = await geocodeLocation(req.body.listing.location);
+//         // ADD GEOCODING LOGIC HERE
+//         const geocodedData = await geocodeLocation(req.body.listing.location);
         
-        const newListing = new Listing(req.body.listing);
-        newListing.owner = req.user._id;
-        newListing.image = {url, filename};
+//         const newListing = new Listing(req.body.listing);
+//         newListing.owner = req.user._id;
+//         newListing.image = {url, filename};
         
-        // ADD COORDINATES FROM GEOCODING
-        if (geocodedData) {
-            newListing.geometry = {
-                type: 'Point',
-                coordinates: geocodedData.coordinates
-            };
-            newListing.mapLocation = geocodedData.formattedAddress;
-        } else {
-            // Default coordinates (center of world map) if geocoding fails
-            newListing.geometry = {
-                type: 'Point',
-                coordinates: [0, 0]
-            };
-        }
+//         // ADD COORDINATES FROM GEOCODING
+//         if (geocodedData) {
+//             newListing.geometry = {
+//                 type: 'Point',
+//                 coordinates: geocodedData.coordinates
+//             };
+//             newListing.mapLocation = geocodedData.formattedAddress;
+//         } else {
+//             // Default coordinates (center of world map) if geocoding fails
+//             newListing.geometry = {
+//                 type: 'Point',
+//                 coordinates: [0, 0]
+//             };
+//         }
         
-        await newListing.save();
-        req.flash("success", "New Listing Created!");
-        res.redirect("/listings");
-    } catch (error) {
-        req.flash("error", "Error creating listing");
-        res.redirect("/listings/new");
+//         await newListing.save();
+//         req.flash("success", "New Listing Created!");
+//         res.redirect("/listings");
+//     } catch (error) {
+//         req.flash("error", "Error creating listing");
+//         res.redirect("/listings/new");
+//     }
+// }
+
+module.exports.createListing = async (req, res) => {
+    let url = req.file.path;
+    let filename = req.file.filename;
+
+    const geocodedData = await geocodeLocation(req.body.listing.location);
+
+    if (!geocodedData) {
+        req.flash("error", "Invalid location. Please enter a valid place.");
+        return res.redirect("/listings/new");
     }
-}
+
+    const newListing = new Listing(req.body.listing);
+    newListing.owner = req.user._id;
+    newListing.image = { url, filename };
+
+    newListing.geometry = {
+        type: "Point",
+        coordinates: geocodedData.coordinates,
+    };
+    
+
+    newListing.mapLocation = geocodedData.formattedAddress;
+
+    await newListing.save();
+
+    req.flash("success", "New Listing Created!");
+    res.redirect("/listings");
+};
 
 
 
